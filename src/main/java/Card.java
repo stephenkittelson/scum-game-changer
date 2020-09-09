@@ -1,21 +1,27 @@
+import java.util.Objects;
+
 public class Card {
-    private int quantity;
     private int value;
+//    private Color color; we don't actually use the color in Scum
 
-    public Card(int quantity, int value) {
-        this.quantity = quantity;
+    public Card(int value) {
         this.value = value;
-    }
-
-    public int getQuantity() {
-        return quantity;
     }
 
     public int getValue() {
         return value;
     }
 
-    public void reduceQuantity(int delta) {
-        quantity = Math.max(0, quantity - delta);
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Card card = (Card) o;
+        return value == card.value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
     }
 }

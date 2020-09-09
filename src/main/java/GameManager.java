@@ -7,17 +7,17 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 public class GameManager {
 
     public void setup() throws IOException {
-        System.out.println("Enter players from king to scum separated by commas: ");
-        new InputStreamReader(System.in);
+        System.out.println("Enter players from king to scum separated by commas (use 'me' for yourself): ");
         BufferedReader inputReader = new BufferedReader(new InputStreamReader(System.in));
         String rawPlayers = inputReader.readLine();
         List<String> splitPlayers = Arrays.asList(rawPlayers.split(","));
-        List<Player> players = splitPlayers.stream().map(name -> new Player(Role.Citizen, name)).collect(Collectors.toList());
+        List<Player> players = splitPlayers.stream().map(name -> new Player(Role.Citizen, StringUtils.trim(name))).collect(Collectors.toList());
         /*
         1 2 3 4 5 6 7 8 9 10 11 12 13
         P V H                HS MS S
@@ -50,17 +50,29 @@ public class GameManager {
 
         players.stream().forEach(player -> System.out.println(player.getName() + ": " + player.getRole()));
 
-        System.out.println("Enter your cards (\"quantity\" \"face value\"\\n):");
+        System.out.println("Enter your cards (\"face value\" \"quantity\"\\n) (use 0 for rook cards):");
+        Map<Card, Integer> myHand = new HashMap<>();
+        BiConsumer<Integer, Integer> cardConsumer = (value, quantity) -> myHand.put(new Card(value), quantity);
+
+        readCards(inputReader, cardConsumer);
+
+        Player me = players.stream().filter(player -> StringUtils.equals("me", player.getName())).findFirst().get();
+        if (!me.getRole().equals(Role.Citizen)) {
+            System.out.print("Enter cards you received: ");
+            readCards(inputReader, (newCardValue, addedQuantity) -> myHand.merge(new Card(newCardValue), addedQuantity, Integer::sum));
+            System.out.print("Enter cards you gave: ");
+            readCards(inputReader, (lostCardValue, removedQuantity) -> myHand.merge(new Card(lostCardValue), -removedQuantity, Integer::sum));
+        }
+        // TODO continue here
+    }
+
+    private void readCards(BufferedReader inputReader, BiConsumer<Integer, Integer> cardConsumer) throws IOException {
         String rawCard;
-        Map<Integer, Card> myHand = new HashMap<>();
         while (StringUtils.isNotBlank(rawCard = inputReader.readLine())) {
             String[] cardPieces = rawCard.split(" ");
-            Integer value = Integer.valueOf(cardPieces[1]);
-            myHand.put(value, new Card(Integer.valueOf(cardPieces[0]), value));
+            Integer value = Integer.valueOf(cardPieces[0]);
+            Integer quantity = Integer.valueOf(cardPieces[1]);
+            cardConsumer.accept(value, quantity);
         }
-
-
-        System.out.println("Enter cards you (gave/received if PVH or HMS) TODO ....");
-        // TODO continue here
     }
 }
